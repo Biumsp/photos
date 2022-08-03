@@ -1,20 +1,25 @@
 from os.path import join, isdir, isfile
 from os import listdir
-from utilities import write, read, check, copy, add_one_second
+from photos_utilities import write, read, validate, copy
+from photos_utilities import add_one_second, decorate_class, debugger, logger
+
 
 class Box():
     def __init__(self, path, create=False):
         
         if create: write(path, dir=True)
-        else: check(isdir())
+        else: validate(isdir(path), f'no directory named {path}: use -c to create one')
         self.path = path
 
         self.labels_path = join(path, '.labels')
         if create:
             self.labels = {}
-            write(self.labels_path, '', override=False) 
+            write(self.labels_path, {}, dumps=True, override=False) 
         else:
-            self.labels = read(self.labels_path, loads=True)
+            self.labels = read(self.labels_path, loads=True, fail_silently=True)
+            if self.labels == 'failed':
+                print('Creating .labels file')
+                write(self.labels_path, {}, dumps=True, override=False)
 
         self.files = self._list_files()
 
@@ -47,3 +52,4 @@ class Box():
     def _write(self):
         write(self.labels_path, self.labels, dumps=True)
         
+Box = decorate_class(Box, debugger(logger), dunder=True)
